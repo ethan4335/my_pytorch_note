@@ -20,6 +20,11 @@ __date__ = '7/23/2020 18:00'
                 ┗┻┛    ┗┻┛
 """
 from __future__ import print_function
+
+'''
+超过100种tensor的运算操作，包括转置，索引，切片，数学运算， 线性代数，随机数等，具体访问
+https://pytorch.org/docs/stable/torch.html
+'''
 import torch
 
 #改变形状：如果想改变形状，可以使用torch.view
