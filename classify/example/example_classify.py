@@ -72,6 +72,7 @@ class Net(nn.Module):
         return torch.tensor(ans)
 
 
+
 # Initialize the model
 model = Net()
 # Define loss criterion
