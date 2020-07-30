@@ -28,7 +28,9 @@ x = torch.randn(4, 4)
 
 
 if torch.cuda.is_available():
+
     device = torch.device("cuda")          # a CUDA device object
+
     print(device)
     y = torch.ones_like(x, device=device)  # 直接在GPU上创建tensor
     x = x.to(device)                       # 或者使用`.to("cuda")`方法
