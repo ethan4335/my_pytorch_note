@@ -36,7 +36,7 @@ class amap_cnn(nn.Module):
             # input:(bitch_size, 1, 64, 48), output:(bitch_size, 64, 64, 48), (64-3+2*1)/1+1 = 64
             # input:(bitch_size, 1, 256, 144), output:(bitch_size, 64, 256, 144), (64-3+2*1)/1+1 = 64
             nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1),  # 卷积层
-            # nn.BatchNorm2d(num_features=64),  # 归一化
+            nn.BatchNorm2d(num_features=64),  # 归一化
             nn.RReLU(inplace=True),  # 激活函数
             # output(bitch_size, 64, 128, 72)
             nn.MaxPool2d(kernel_size=2, stride=2),  # 最大值池化
@@ -47,7 +47,7 @@ class amap_cnn(nn.Module):
             # input:(bitch_size, 64, 32, 24), output:(bitch_size, 128, 32, 24), (32-3+2*1)/1+1 = 32
             # input:(bitch_size, 64, 128, 72), output:(bitch_size, 128, 128, 72), (32-3+2*1)/1+1 = 128
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
-            # nn.BatchNorm2d(num_features=128),# 归一化
+            nn.BatchNorm2d(num_features=128),  # 归一化
             nn.RReLU(inplace=True),
             # output:(bitch_size, 128, 64 ,36)
             nn.MaxPool2d(kernel_size=2, stride=2),
@@ -57,7 +57,7 @@ class amap_cnn(nn.Module):
         self.conv3 = nn.Sequential(
             # input:(bitch_size, 128, 64, 36), output:(bitch_size, 256, 64, 36), (16-3+2*1)/1+1 = 64
             nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1),
-            # nn.BatchNorm2d(num_features=256),# 归一化
+            nn.BatchNorm2d(num_features=256),  # 归一化
             nn.RReLU(inplace=True),
             # output:(bitch_size, 256, 32 ,18)
             nn.MaxPool2d(kernel_size=2, stride=2),
@@ -81,15 +81,15 @@ class amap_cnn(nn.Module):
 
         # 全连接层
         self.fc = nn.Sequential(
-            nn.Dropout(p=0.3),
-            nn.Linear(in_features=256 * 8 * 6, out_features=4096),
-            nn.RReLU(inplace=True),
-            nn.Dropout(p=0.5),
-            nn.Linear(in_features=4096, out_features=1024),
-            nn.RReLU(inplace=True),
-            nn.Linear(in_features=1024, out_features=256),
-            nn.RReLU(inplace=True),
-            nn.Linear(in_features=256, out_features=3),
+            # nn.Dropout(p=0.2),
+            # nn.Linear(in_features=256 * 8 * 6, out_features=4096),
+            # nn.RReLU(inplace=True),
+            # nn.Dropout(p=0.3),
+            # nn.Linear(in_features=4096, out_features=1024),
+            # nn.RReLU(inplace=True),
+            # nn.Linear(in_features=1024, out_features=256),
+            # nn.RReLU(inplace=True),
+            nn.Linear(in_features=256 * 8 * 6, out_features=3),
         )
 
     # 前向传播
@@ -208,12 +208,12 @@ def main():
     pic_path = 'D:\\Dataset\\amap_traffic_GaoDe\\test_pics'
     json = 'D:\\Dataset\\amap_traffic_GaoDe\\amap_traffic_annotations_test.json'
     # 修改输出
-    out_json = 'D:\\Dataset\\amap_traffic_GaoDe\\predict\\net7.2_predict.json'
+    out_json = 'D:\\Dataset\\amap_traffic_GaoDe\\predict\\net8_predict.json'
 
     copyfile(json, out_json)
 
     model2 = amap_cnn()
-    model2.load_state_dict(torch.load('D:\\Dataset\\amap_traffic_GaoDe\\cnn_model\\model_net7.pt'))
+    model2.load_state_dict(torch.load(r'D:\\Dataset\\amap_traffic_GaoDe\\cnn_model\\checkpoint\\14-33-06\\checkpoint.pt'))
     model2.eval()
 
     path_file_list = get_pics_path(pic_path)
