@@ -240,15 +240,15 @@ class amap_cnn(nn.Module):
 
         # 全连接层
         self.fc = nn.Sequential(
-            # nn.Dropout(p=0.2),
-            # nn.Linear(in_features=256 * 8 * 6, out_features=4096),
-            # nn.RReLU(inplace=True),
-            # nn.Dropout(p=0.3),
-            # nn.Linear(in_features=4096, out_features=1024),
-            # nn.RReLU(inplace=True),
-            # nn.Linear(in_features=1024, out_features=256),
-            # nn.RReLU(inplace=True),
-            nn.Linear(in_features=256 * 8 * 6, out_features=3),
+            nn.Dropout(p=0.2),
+            nn.Linear(in_features=256 * 8 * 6, out_features=4096),
+            nn.RReLU(inplace=True),
+            nn.Dropout(p=0.5),
+            nn.Linear(in_features=4096, out_features=1024),
+            nn.RReLU(inplace=True),
+            nn.Linear(in_features=1024, out_features=256),
+            nn.RReLU(inplace=True),
+            nn.Linear(in_features=256, out_features=3),
         )
 
     # 前向传播
@@ -325,7 +325,7 @@ def train(train_dataset, val_dataset, batch_size, epochs, learning_rate, wt_deca
         else:
             print('Epoch: ', epoch, '| loss_rate: %.8f' % loss_rate)
 
-        if loss_rate < 0.001:
+        if loss_rate < 0.0001:
             return model
         import os
         if epoch % 5 == 0 and epoch > 0:
@@ -333,8 +333,8 @@ def train(train_dataset, val_dataset, batch_size, epochs, learning_rate, wt_deca
             new_path = "D:\\Dataset\\amap_traffic_GaoDe\\cnn_model\\checkpoint\\" + time_format
             if not os.path.isdir(new_path):
                 os.mkdir(new_path)
-            torch.save(model.state_dict(), new_path+"\\checkpoint.pt")
-            print('model saved',time_format)
+            torch.save(model.state_dict(), new_path + "\\checkpoint.pt")
+            print('model saved', time_format)
 
     return model
 
@@ -349,10 +349,10 @@ def main():
     train_dataset = amap_dataset(root=train_path)
     val_dataset = amap_dataset(root=val_path)
     # 超参数可自行指定
-    model = train(train_dataset, val_dataset, batch_size=56, epochs=400, learning_rate=0.1, wt_decay=0)
+    model = train(train_dataset, val_dataset, batch_size=80, epochs=400, learning_rate=0.1, wt_decay=0)
     # 保存模型
     # torch.save(model, 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net5.pkl')
-    torch.save(model.state_dict(), 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net10.pt')
+    torch.save(model.state_dict(), 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net11.pt')
 
 
 if __name__ == '__main__':

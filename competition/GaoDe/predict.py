@@ -208,12 +208,12 @@ def main():
     pic_path = 'D:\\Dataset\\amap_traffic_GaoDe\\test_pics'
     json = 'D:\\Dataset\\amap_traffic_GaoDe\\amap_traffic_annotations_test.json'
     # 修改输出
-    out_json = 'D:\\Dataset\\amap_traffic_GaoDe\\predict\\net8_predict.json'
+    out_json = 'D:\\Dataset\\amap_traffic_GaoDe\\predict\\net10_predict.json'
 
     copyfile(json, out_json)
 
     model2 = amap_cnn()
-    model2.load_state_dict(torch.load(r'D:\\Dataset\\amap_traffic_GaoDe\\cnn_model\\checkpoint\\14-33-06\\checkpoint.pt'))
+    model2.load_state_dict(torch.load(r'D:\Dataset\amap_traffic_GaoDe\cnn_model\checkpoint\23-05-27\checkpoint.pt'))
     model2.eval()
 
     path_file_list = get_pics_path(pic_path)
