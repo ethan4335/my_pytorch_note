@@ -19,6 +19,19 @@ from sklearn.metrics import f1_score
 import torch.optim as optim
 
 
+class MylossFunc(nn.Module):
+    def __init__(self, deta):
+        super(MylossFunc, self).__init__()
+        self.deta = deta
+
+    def forward(self, out, label):
+        out = torch.nn.functional.softmax(out, dim=1)
+        m = torch.max(out, 1)[0]
+        penalty = self.deta * torch.ones(m.size())
+        loss = torch.where(m > 0.5, m, penalty)
+        loss = torch.sum(loss)
+        loss = Variable(loss, requires_grad=True)
+        return loss
 
 
 class amap_loss(nn.Module):
@@ -29,7 +42,6 @@ class amap_loss(nn.Module):
         predict_np = np.argmax(predict.data.cpu().numpy(), axis=1)
         label_np = labels.data.numpy()
         f1 = f1_score(label_np, predict_np, average=None)
-        # print(f1)
 
         list1 = label_np.tolist()
         list2 = predict_np.tolist()
@@ -53,9 +65,63 @@ class amap_loss(nn.Module):
 
         arr_f1 = np.array([amap_f1])
         f1_tensor = torch.autograd.Variable(torch.from_numpy(arr_f1), requires_grad=True)
-        # print(f1_tensor)
         return f1_tensor
 
+    # def forward(self, predict, labels):
+    #     pred = np.argmax(predict.data.cpu().numpy(), axis=1)
+    #     label = labels.data.numpy()
+    #
+    #     tp0 = 0
+    #     fp0 = 0
+    #     fn0 = 0
+    #     p0 = 0
+    #     r0 = 0
+    #     f1_0 = 0
+    #
+    #     tp1 = 0
+    #     fp1 = 0
+    #     fn1 = 0
+    #     p1 = 0
+    #     r1 = 0
+    #     f1_1 = 0
+    #
+    #     tp2 = 0
+    #     fp2 = 0
+    #     fn2 = 0
+    #     p2 = 0
+    #     r2 = 0
+    #     f1_2 = 0
+    #
+    #     tp0 += np.sum((pred == 0) & (label == 0))
+    #     fp0 += np.sum((pred != 0) & (label == 0))
+    #     fn0 += np.sum((pred == 0) & (label != 0))
+    #     if (tp0 + fp0) > 0 and (tp0 + fn0) > 0:
+    #         p0 = tp0 / (tp0 + fp0)
+    #         r0 = tp0 / (tp0 + fn0)
+    #         if (p0 + r0) > 0:
+    #             f1_0 = 2 * p0 * r0 / (p0 + r0)
+    #
+    #     tp1 += np.sum((pred == 1) & (label == 1))
+    #     fp1 += np.sum((pred != 1) & (label == 1))
+    #     fn1 += np.sum((pred == 1) & (label != 1))
+    #     if (tp1 + fp1) > 0 and (tp1 + fn1) > 0:
+    #         p1 = tp1 / (tp1 + fp1)
+    #         r1 = tp1 / (tp1 + fn1)
+    #         if (p1 + r1) > 0:
+    #             f1_1 = 2 * p1 * r1 / (p1 + r1)
+    #
+    #     tp2 += np.sum((pred == 2) & (label == 2))
+    #     fp2 += np.sum((pred != 2) & (label == 2))
+    #     fn2 += np.sum((pred == 2) & (label != 2))
+    #     if (tp2 + fp2) > 0 and (tp2 + fn2) > 0:
+    #         p2 = tp2 / (tp2 + fp2)
+    #         r2 = tp2 / (tp2 + fn2)
+    #         if (p2 + r2) > 0:
+    #             f1_2 = 2 * p2 * r2 / (p2 + r2)
+    #
+    #     # print('f1:',self.f1_0,self.f1_1,self.f1_2)
+    #     loss = np.sum(1 - 0.2 * f1_0 - 0.2 * f1_1 - 0.6 * f1_2)
+    #     return torch.tensor(loss)
 
 
 # 4. 我们通过继承Dataset类来创建我们自己的"数据加载类"，命名为FaceDataset。
@@ -217,8 +283,8 @@ def train(train_dataset, val_dataset, batch_size, epochs, learning_rate, wt_deca
     # 构建模型
     model = amap_cnn().cuda()
     # 损失函数
-    # loss_function = nn.CrossEntropyLoss().cuda()
-    loss_function = amap_loss().cuda()
+    loss_function = nn.CrossEntropyLoss().cuda()
+    # loss_function = amap_loss().cuda()
     # 优化器
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, weight_decay=wt_decay)
     # 学习率衰减
@@ -259,7 +325,7 @@ def train(train_dataset, val_dataset, batch_size, epochs, learning_rate, wt_deca
         else:
             print('Epoch: ', epoch, '| loss_rate: %.8f' % loss_rate)
 
-        if loss_rate < 0.01:
+        if loss_rate < 0.001:
             return model
         import os
         if epoch % 5 == 0 and epoch > 0:
@@ -274,8 +340,8 @@ def train(train_dataset, val_dataset, batch_size, epochs, learning_rate, wt_deca
 
 
 def main():
-    train_path = 'D:/Dataset/amap_traffic_GaoDe/train_144-256_more_5600'
-    val_path = 'D:/Dataset/amap_traffic_GaoDe/val_144-256'
+    train_path = r'D:\Dataset\amap_traffic_GaoDe\over\train'
+    val_path = r'D:\Dataset\amap_traffic_GaoDe\over\val'
     # generate_label(train_path)
     # generate_label(val_path)
 
@@ -283,10 +349,10 @@ def main():
     train_dataset = amap_dataset(root=train_path)
     val_dataset = amap_dataset(root=val_path)
     # 超参数可自行指定
-    model = train(train_dataset, val_dataset, batch_size=100, epochs=600, learning_rate=0.1, wt_decay=0)
+    model = train(train_dataset, val_dataset, batch_size=56, epochs=400, learning_rate=0.1, wt_decay=0)
     # 保存模型
     # torch.save(model, 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net5.pkl')
-    torch.save(model.state_dict(), 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net9.pt')
+    torch.save(model.state_dict(), 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net10.pt')
 
 
 if __name__ == '__main__':

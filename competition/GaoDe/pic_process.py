@@ -59,7 +59,7 @@ def pics_size(pic_files):
     print('all pic kinds:', size_set)
 
 
-def process_image(path, size=(144,256)):
+def process_image(path, size=(480,640)):
     # print('resize:',size)
     mode = Image.open(path)
     # 使用Compose函数生成一个PiPeLine
@@ -103,7 +103,7 @@ def main():
     for pic in path_list:
         # showTorchImage(read_image(pic))
         mode = process_image(pic)  # save to file
-        new_pic = pic.replace('amap_traffic_train_0712', '0712_train_144-256')
+        new_pic = pic.replace('amap_traffic_train_0712', '0712_train_480-640')
         save_tensor_image(new_pic, mode)
 
 
