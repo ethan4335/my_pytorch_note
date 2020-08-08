@@ -126,10 +126,13 @@ class amap_cnn(nn.Module):
             nn.Dropout(p=0.2),
             nn.Linear(in_features=256 * 8 * 6, out_features=4096),
             nn.RReLU(inplace=True),
-            nn.Dropout(p=0.5),
-            nn.Linear(in_features=4096, out_features=1024),
+            nn.Dropout(p=0.3),
+            nn.Linear(in_features=4096, out_features=2048),
             nn.RReLU(inplace=True),
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=0.3),
+            nn.Linear(in_features=2048, out_features=1024),
+            nn.RReLU(inplace=True),
+            # nn.Dropout(p=0.3),
             nn.Linear(in_features=1024, out_features=256),
             nn.RReLU(inplace=True),
             nn.Linear(in_features=256, out_features=3),
@@ -187,7 +190,7 @@ def train(train_dataset, val_dataset, batch_size, epochs, learning_rate, wt_deca
             output = model.forward(images).cpu()
             # 误差计算
             loss_rate = loss_function(output, labels).cpu()
-            print(loss_rate.dtype)
+            # print(loss_rate.dtype)
             # 误差的反向传播
             loss_rate.backward()
             # 更新参数
@@ -219,8 +222,8 @@ def train(train_dataset, val_dataset, batch_size, epochs, learning_rate, wt_deca
 
 
 def main():
-    train_path = 'D:/Dataset/amap_traffic_GaoDe/train_144-256_more_5600'
-    val_path = 'D:/Dataset/amap_traffic_GaoDe/val_144-256_more_1292'
+    train_path = r'D:\Dataset\amap_traffic_GaoDe\train'
+    val_path = r'D:\Dataset\amap_traffic_GaoDe\val'
     # generate_label(train_path)
     # generate_label(val_path)
 
@@ -228,10 +231,10 @@ def main():
     train_dataset = amap_dataset(root=train_path)
     val_dataset = amap_dataset(root=val_path)
     # 超参数可自行指定
-    model = train(train_dataset, val_dataset, batch_size=56, epochs=60, learning_rate=0.1, wt_decay=0)
+    model = train(train_dataset, val_dataset, batch_size=64, epochs=100, learning_rate=0.1, wt_decay=0)
     # 保存模型
     # torch.save(model, 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net5.pkl')
-    torch.save(model.state_dict(), 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net8.pt')
+    torch.save(model.state_dict(), 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net15.pt')
 
 
 if __name__ == '__main__':

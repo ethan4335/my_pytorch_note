@@ -67,63 +67,6 @@ class amap_loss(nn.Module):
         f1_tensor = torch.autograd.Variable(torch.from_numpy(arr_f1), requires_grad=True)
         return f1_tensor
 
-    # def forward(self, predict, labels):
-    #     pred = np.argmax(predict.data.cpu().numpy(), axis=1)
-    #     label = labels.data.numpy()
-    #
-    #     tp0 = 0
-    #     fp0 = 0
-    #     fn0 = 0
-    #     p0 = 0
-    #     r0 = 0
-    #     f1_0 = 0
-    #
-    #     tp1 = 0
-    #     fp1 = 0
-    #     fn1 = 0
-    #     p1 = 0
-    #     r1 = 0
-    #     f1_1 = 0
-    #
-    #     tp2 = 0
-    #     fp2 = 0
-    #     fn2 = 0
-    #     p2 = 0
-    #     r2 = 0
-    #     f1_2 = 0
-    #
-    #     tp0 += np.sum((pred == 0) & (label == 0))
-    #     fp0 += np.sum((pred != 0) & (label == 0))
-    #     fn0 += np.sum((pred == 0) & (label != 0))
-    #     if (tp0 + fp0) > 0 and (tp0 + fn0) > 0:
-    #         p0 = tp0 / (tp0 + fp0)
-    #         r0 = tp0 / (tp0 + fn0)
-    #         if (p0 + r0) > 0:
-    #             f1_0 = 2 * p0 * r0 / (p0 + r0)
-    #
-    #     tp1 += np.sum((pred == 1) & (label == 1))
-    #     fp1 += np.sum((pred != 1) & (label == 1))
-    #     fn1 += np.sum((pred == 1) & (label != 1))
-    #     if (tp1 + fp1) > 0 and (tp1 + fn1) > 0:
-    #         p1 = tp1 / (tp1 + fp1)
-    #         r1 = tp1 / (tp1 + fn1)
-    #         if (p1 + r1) > 0:
-    #             f1_1 = 2 * p1 * r1 / (p1 + r1)
-    #
-    #     tp2 += np.sum((pred == 2) & (label == 2))
-    #     fp2 += np.sum((pred != 2) & (label == 2))
-    #     fn2 += np.sum((pred == 2) & (label != 2))
-    #     if (tp2 + fp2) > 0 and (tp2 + fn2) > 0:
-    #         p2 = tp2 / (tp2 + fp2)
-    #         r2 = tp2 / (tp2 + fn2)
-    #         if (p2 + r2) > 0:
-    #             f1_2 = 2 * p2 * r2 / (p2 + r2)
-    #
-    #     # print('f1:',self.f1_0,self.f1_1,self.f1_2)
-    #     loss = np.sum(1 - 0.2 * f1_0 - 0.2 * f1_1 - 0.6 * f1_2)
-    #     return torch.tensor(loss)
-
-
 # 4. 我们通过继承Dataset类来创建我们自己的"数据加载类"，命名为FaceDataset。
 class amap_dataset(data.Dataset):
     # 首先要做的是类的初始化。之前的data-label对照表已经创建完毕，在加载数据时需用到其中的信息。因此在初始化过程中，我们需要完成对data-label对照表中数据的读取工作。
@@ -196,8 +139,9 @@ class amap_cnn(nn.Module):
             # input:(bitch_size, 1, 256, 144), output:(bitch_size, 64, 256, 144), (64-3+2*1)/1+1 = 64
             nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1),  # 卷积层
             nn.BatchNorm2d(num_features=64),  # 归一化
-            nn.RReLU(inplace=True),  # 激活函数
+            # nn.RReLU(inplace=True),  # 激活函数
             # output(bitch_size, 64, 128, 72)
+            torch.nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),  # 最大值池化
         )
 
@@ -207,8 +151,9 @@ class amap_cnn(nn.Module):
             # input:(bitch_size, 64, 128, 72), output:(bitch_size, 128, 128, 72), (32-3+2*1)/1+1 = 128
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(num_features=128),  # 归一化
-            nn.RReLU(inplace=True),
+            # nn.RReLU(inplace=True),
             # output:(bitch_size, 128, 64 ,36)
+            torch.nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
@@ -217,8 +162,9 @@ class amap_cnn(nn.Module):
             # input:(bitch_size, 128, 64, 36), output:(bitch_size, 256, 64, 36), (16-3+2*1)/1+1 = 64
             nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(num_features=256),  # 归一化
-            nn.RReLU(inplace=True),
+            # nn.RReLU(inplace=True),
             # output:(bitch_size, 256, 32 ,18)
+            torch.nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
@@ -328,7 +274,7 @@ def train(train_dataset, val_dataset, batch_size, epochs, learning_rate, wt_deca
         if loss_rate < 0.0001:
             return model
         import os
-        if epoch % 5 == 0 and epoch > 0:
+        if epoch % 10 == 0 and epoch > 0:
             # 中途保存模型，这样就可以随时启停喽~
             new_path = "D:\\Dataset\\amap_traffic_GaoDe\\cnn_model\\checkpoint\\" + time_format
             if not os.path.isdir(new_path):
@@ -352,7 +298,7 @@ def main():
     model = train(train_dataset, val_dataset, batch_size=80, epochs=400, learning_rate=0.1, wt_decay=0)
     # 保存模型
     # torch.save(model, 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net5.pkl')
-    torch.save(model.state_dict(), 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net11.pt')
+    torch.save(model.state_dict(), 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net14.pt')
 
 
 if __name__ == '__main__':

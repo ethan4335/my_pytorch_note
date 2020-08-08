@@ -17,6 +17,7 @@ from torch.utils import data
 
 use_gpu = torch.cuda.is_available()
 
+
 # 4. 我们通过继承Dataset类来创建我们自己的"数据加载类"，命名为FaceDataset。
 class amap_dataset(data.Dataset):
     # 首先要做的是类的初始化。之前的data-label对照表已经创建完毕，在加载数据时需用到其中的信息。因此在初始化过程中，我们需要完成对data-label对照表中数据的读取工作。
@@ -40,7 +41,7 @@ class amap_dataset(data.Dataset):
         # 调整大小
         # pic_res = cv2.resize(pic, (64,48))
         # print(pic_res.shape)
-        res = cv2.resize(pic, dsize=(144, 144), interpolation=cv2.INTER_CUBIC)
+        res = cv2.resize(pic, dsize=(32, 24), interpolation=cv2.INTER_CUBIC)
         # print(res.shape)
         # print(res.shape)
         # 读取单通道灰度图
@@ -51,7 +52,7 @@ class amap_dataset(data.Dataset):
         # 直方图均衡化
         # pic_hist = cv2.equalizeHist(res)
         # 像素值标准化
-        pic_normalized = res.reshape(3, 144, 144) / 255.0  # 为与pytorch中卷积神经网络API的设计相适配，需reshape原图
+        pic_normalized = res.reshape(3, 32, 24) / 255.0  # 为与pytorch中卷积神经网络API的设计相适配，需reshape原图
         # print(pic_normalized.shape)
         # 用于训练的数据需为tensor类型
         pic_tensor = torch.from_numpy(pic_normalized).cuda()  # 将python中的numpy数据类型转化为pytorch中的tensor数据类型
@@ -88,8 +89,8 @@ class amap_cnn(nn.Module):
             # input:(bitch_size, 1, 48, 48), output:(bitch_size, 64, 48, 48), (48-3+2*1)/1+1 = 48
             # input:(bitch_size, 1, 64, 48), output:(bitch_size, 64, 64, 48), (64-3+2*1)/1+1 = 64
             # input:(bitch_size, 1, 256, 144), output:(bitch_size, 64, 256, 144), (64-3+2*1)/1+1 = 64
-            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1),  # 卷积层
-            # nn.BatchNorm2d(num_features=64),  # 归一化
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1),  # 卷积层
+            nn.BatchNorm2d(num_features=32),  # 归一化
             nn.RReLU(inplace=True),  # 激活函数
             # output(bitch_size, 64, 128, 72)
             nn.MaxPool2d(kernel_size=2, stride=2),  # 最大值池化
@@ -99,8 +100,8 @@ class amap_cnn(nn.Module):
         self.conv2 = nn.Sequential(
             # input:(bitch_size, 64, 32, 24), output:(bitch_size, 128, 32, 24), (32-3+2*1)/1+1 = 32
             # input:(bitch_size, 64, 128, 72), output:(bitch_size, 128, 128, 72), (32-3+2*1)/1+1 = 128
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
-            # nn.BatchNorm2d(num_features=128),# 归一化
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(num_features=64),  # 归一化
             nn.RReLU(inplace=True),
             # output:(bitch_size, 128, 64 ,36)
             nn.MaxPool2d(kernel_size=2, stride=2),
@@ -109,20 +110,10 @@ class amap_cnn(nn.Module):
         # 第三次卷积、池化
         self.conv3 = nn.Sequential(
             # input:(bitch_size, 128, 64, 36), output:(bitch_size, 256, 64, 36), (16-3+2*1)/1+1 = 64
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1),
-            # nn.BatchNorm2d(num_features=256),# 归一化
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(num_features=128),  # 归一化
             nn.RReLU(inplace=True),
             # output:(bitch_size, 256, 32 ,18)
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-
-        # 第4次卷积、池化
-        self.conv4 = nn.Sequential(
-            # input:(bitch_size, 128, 64, 36), output:(bitch_size, 256, 64, 36), (16-3+2*1)/1+1 = 64
-            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1),
-            # nn.BatchNorm2d(num_features=512),# 归一化
-            nn.RReLU(inplace=True),
-            # output:(bitch_size, 512, 16 ,9)
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
@@ -130,16 +121,19 @@ class amap_cnn(nn.Module):
         self.conv1.apply(gaussian_weights_init)
         self.conv2.apply(gaussian_weights_init)
         self.conv3.apply(gaussian_weights_init)
-        self.conv4.apply(gaussian_weights_init)
 
         # 全连接层
         self.fc = nn.Sequential(
-            nn.Dropout(p=0.5),
-            nn.Linear(in_features=512 * 9 * 9, out_features=4096),
+            nn.Dropout(p=0.2),
+            nn.Linear(in_features=128 * 4 * 3, out_features=4096),
             nn.RReLU(inplace=True),
-            nn.Dropout(p=0.5),
-            nn.Linear(in_features=4096, out_features=1024),
+            nn.Dropout(p=0.3),
+            nn.Linear(in_features=4096, out_features=2048),
             nn.RReLU(inplace=True),
+            nn.Dropout(p=0.3),
+            nn.Linear(in_features=2048, out_features=1024),
+            nn.RReLU(inplace=True),
+            # nn.Dropout(p=0.3),
             nn.Linear(in_features=1024, out_features=256),
             nn.RReLU(inplace=True),
             nn.Linear(in_features=256, out_features=3),
@@ -150,7 +144,6 @@ class amap_cnn(nn.Module):
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
-        x = self.conv4(x)
         # 数据扁平化
         x = x.view(x.shape[0], -1)
         y = self.fc(x)
@@ -160,6 +153,7 @@ class amap_cnn(nn.Module):
 # 验证模型在验证集上的正确率
 def validate(model, dataset, batch_size):
     val_loader = data.DataLoader(dataset, batch_size)
+    # print(len(val_loader))
     result, num = 0.0, 0
     for images, labels in val_loader:
         pred = model.forward(images)
@@ -198,27 +192,41 @@ def train(train_dataset, val_dataset, batch_size, epochs, learning_rate, wt_deca
             output = model.forward(images).cpu()
             # 误差计算
             loss_rate = loss_function(output, labels).cpu()
+            # print(loss_rate.dtype)
             # 误差的反向传播
             loss_rate.backward()
             # 更新参数
             optimizer.step()
 
+        import time
+        time_format = time.strftime('%H-%M-%S', time.localtime(time.time()))
         # 打印每轮的损失
         # print('After {} epochs , loss_rate: '.format(epoch + 1), loss_rate.item())
-        if epoch % 10 == 0:
+        if epoch % 5 == 0:
             model.eval()  # 模型评估
             acc_train = validate(model, train_dataset, batch_size)
             acc_val = validate(model, val_dataset, batch_size)
             # print('After {} epochs , acc_train: '.format(epoch + 1), acc_train)
             # print('After {} epochs , acc_val: '.format(epoch + 1), acc_val)
-            print('Epoch: ', epoch, '| loss_rate: %.4f' % loss_rate, '| val accuracy: %.4f' % acc_val)
+            print('Epoch: ', epoch, '| loss_rate: %.8f' % loss_rate, '| acc_train: %.4f' % acc_train,
+                  '| val accuracy: %.4f' % acc_val, '| ', time_format)
+        else:
+            print('Epoch: ', epoch, '| loss_rate: %.8f' % loss_rate)
+
+        # if epoch % 20 == 0:
+        #     # 中途保存模型，这样就可以随时启停喽~
+        #     new_path = "D:\\Dataset\\amap_traffic_GaoDe\\cnn_model\\checkpoint\\" + time_format
+        #     if not os.path.isdir(new_path):
+        #         os.mkdir(new_path)
+        #     torch.save(model.state_dict(), new_path+"\\checkpoint.pt")
+        #     print('model saved.',time_format)
 
     return model
 
 
 def main():
-    train_path = 'D:/Dataset/amap_traffic_GaoDe/train_144-256'
-    val_path = 'D:/Dataset/amap_traffic_GaoDe/val_144-256'
+    train_path = r'D:\Dataset\amap_traffic_GaoDe\train'
+    val_path = r'D:\Dataset\amap_traffic_GaoDe\val'
     # generate_label(train_path)
     # generate_label(val_path)
 
@@ -226,10 +234,10 @@ def main():
     train_dataset = amap_dataset(root=train_path)
     val_dataset = amap_dataset(root=val_path)
     # 超参数可自行指定
-    model = train(train_dataset, val_dataset, batch_size=1, epochs=500, learning_rate=0.1, wt_decay=0)
+    model = train(train_dataset, val_dataset, batch_size=64, epochs=100, learning_rate=0.1, wt_decay=0)
     # 保存模型
-    torch.save(model, 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net6.pkl')
-    torch.save(model.state_dict(), 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net13.pt')
+    # torch.save(model, 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net5.pkl')
+    torch.save(model.state_dict(), 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net15.pt')
 
 
 if __name__ == '__main__':

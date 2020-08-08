@@ -182,7 +182,7 @@ def main():
     # out_train = 'D:\\Dataset\\amap_traffic_GaoDe\\all_train_480-640_over\\pics'
     # copy_img_by_type(list(label_set), origin_pics, out_train)
 
-    random_add_pics('D:\\Dataset\\amap_traffic_GaoDe\\all_train_480-640_over\\pics\\2\\',900)
+    random_add_pics('D:\\Dataset\\amap_traffic_GaoDe\\all_train_480-640_over2\\pics\\2\\',900)
 
 
 if __name__ == '__main__':
