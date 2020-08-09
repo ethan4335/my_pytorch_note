@@ -44,7 +44,7 @@ class amap_dataset(data.Dataset):
         # 调整大小
         # pic_res = cv2.resize(pic, (64,48))
         # print(pic_res.shape)
-        res = cv2.resize(pic, dsize=(256, 144), interpolation=cv2.INTER_CUBIC)
+        res = cv2.resize(pic, dsize=(64, 48), interpolation=cv2.INTER_CUBIC)
         # print(res.shape)
         # print(res.shape)
         # 读取单通道灰度图
@@ -55,7 +55,7 @@ class amap_dataset(data.Dataset):
         # 直方图均衡化
         # pic_hist = cv2.equalizeHist(res)
         # 像素值标准化
-        pic_normalized = res.reshape(3, 256, 144) / 255.0  # 为与pytorch中卷积神经网络API的设计相适配，需reshape原图
+        pic_normalized = res.reshape(3, 64, 48) / 255.0  # 为与pytorch中卷积神经网络API的设计相适配，需reshape原图
         # print(pic_normalized.shape)
         # 用于训练的数据需为tensor类型
         pic_tensor = torch.from_numpy(pic_normalized)  # 将python中的numpy数据类型转化为pytorch中的tensor数据类型
@@ -126,7 +126,7 @@ class amap_cnn(nn.Module):
         # 全连接层
         self.fc = nn.Sequential(
             nn.Dropout(p=0.2),
-            nn.Linear(in_features=256 * 32 * 18, out_features=4096),
+            nn.Linear(in_features=256 * 8 * 6, out_features=4096),
             nn.RReLU(inplace=True),
             nn.Dropout(p=0.5),
             nn.Linear(in_features=4096, out_features=1024),
@@ -215,9 +215,11 @@ def main():
     train_dataset = amap_dataset(root=train_path)
     val_dataset = amap_dataset(root=val_path)
     # 超参数可自行指定
-    model = train(train_dataset, val_dataset, batch_size=128, epochs=50, learning_rate=0.1, wt_decay=0)
+    model = train(train_dataset, val_dataset, batch_size=12, epochs=50, learning_rate=0.1, wt_decay=0)
     # 保存模型
-    torch.save(model, 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net2.pkl')
+    # torch.save(model, 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net2.pkl')
+    torch.save(model.state_dict(), 'D:/Dataset/amap_traffic_GaoDe/cnn_model/model_net15.pt')
+
 
 
 if __name__ == '__main__':
